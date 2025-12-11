@@ -10,14 +10,14 @@
             background: #f5f7fa;
         }
         h1 {
-            color: #2E7D32;
+            color: #2E7D32; /* Dark green */
         }
         p {
-            color: #f2761a;
+            color: #f2761a; /* Orange */
         }
         .hidden { display: none; }
         .blocked {
-            color: #B71C1C;
+            color: #B71C1C; /* Dark red */
             font-weight: bold;
             margin-top: 40px;
         }
@@ -49,75 +49,60 @@
         <p>Your Salesforce UserId is not authorized to view this content.</p>
     </div>
 
+    <!-- jQuery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
+    <!-- Salesforce Canvas SDK -->
     <script src="https://login.salesforce.com/canvas/sdk/js/57.0/canvas-all.js"></script>
 
     <script>
-        // Allowed Salesforce users
-        const allowedUserIds = [
-            "005NS00000HHuDhYAL"
-        ];
+        // List of authorized Salesforce User IDs
+        const allowedUserIds = ["005NS00000HHuDhYAL", "005NS00000JHnfiYAD"];
 
-        // Hide all initially
-        $('#content').addClass('hidden');
-        $('#blockedMessage').addClass('hidden');
-
-        function checkAccess(userId) {
-            console.log("Checking access for User:", userId);
-
+        // Show/hide content based on userId
+        function showContent(userId) {
             if (userId && allowedUserIds.includes(userId.trim())) {
                 $('#content').removeClass('hidden');
                 $('#blockedMessage').addClass('hidden');
+                console.log('Authorized user:', userId);
             } else {
                 $('#content').addClass('hidden');
                 $('#blockedMessage').removeClass('hidden');
+                console.log('Unauthorized user:', userId);
             }
         }
 
-        // Main Canvas authentication logic
+        // Initialize Canvas
         function initCanvas() {
-            console.log("Canvas object:", window.Sfdc);
-
             if (window.Sfdc && Sfdc.canvas && Sfdc.canvas.client) {
-                console.log("Canvas detected, getting signed request...");
+                const context = Sfdc.canvas.client.context || {};
+                console.log('Canvas context object:', context);
 
-                Sfdc.canvas.client.refreshSignedRequest(function (data) {
-                    console.log("Signed request data:", data);
+                const userId = context.user ? context.user.userId : null;
+                console.log('Canvas detected. UserId:', userId);
 
-                    if (data && data.context && data.context.user && data.context.user.userId) {
-                        // SUCCESS: User authenticated
-                        const userId = data.context.user.userId;
-                        console.log("Canvas UserId:", userId);
-                        checkAccess(userId);
-                    } else {
-                        console.log("No signedRequest found → starting OAuth flow");
+                showContent(userId);
 
-                        const clientId = "3MVG9VMBZCsTL9hkWQ1BrPa_bs34VIUTXdM8vYAAszdjFeq0Dtk8yldxDQM4_q.XqCGUJuPmwEv0lGQJZpgpK";
-
-                        const callbackUrl = encodeURIComponent("https://vikki4753g.github.io/ExternalCanvasWebsite/callback.html");
-
-                        const authUrl =
-                            "https://cloudanalogy-4c0-dev-ed.develop.my.salesforce.com/services/oauth2/authorize?client_id=3MVG9VMBZCsTL9hkWQ1BrPa_bs34VIUTXdM8vYAAszdjFeq0Dtk8yldxDQM4_q.XqCGUJuPmwEv0lGQJZpgpK&response_type=token&redirect_uri=https://vikki4753g.github.io/ExternalCanvasWebsite/callback.html";
-
-                        console.log("Redirecting user to OAuth:", authUrl);
-
-                        window.top.location.href = authUrl;
+                // Optional: subscribe to Canvas events
+                Sfdc.canvas.controller.subscribe({
+                    name: 'openLoginExternally',
+                    onData: function(event) {
+                        console.log('Received Canvas event:', event);
+                        if(event.url) window.open(event.url, '_blank');
                     }
                 });
 
             } else {
-                // Not inside Canvas — allow free access in browser
-                console.log("Not inside Canvas → Direct Browser Mode");
+                // Not inside Canvas → direct browser access
+                console.log('Canvas not detected. Showing default content.');
                 $('#content').removeClass('hidden');
                 $('#blockedMessage').addClass('hidden');
             }
         }
 
-        // Run auth logic
-        initCanvas();
+        $(document).ready(initCanvas);
 
-        // Button login handling
+        // Login button for direct access
         $('#loginBtn').on('click', function() {
             window.open('https://login.salesforce.com', '_blank');
         });
@@ -125,5 +110,3 @@
 
 </body>
 </html>
-
-
