@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Canvas App Secure Page</title>
+    <title>Canvas App Secure Page (OAuth)</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f7fa; }
         h1 { color: #2E7D32; }
@@ -22,8 +22,8 @@
     </div>
 
     <div id="blockedMessage" class="hidden blocked">
-        <h1>Access Denied</h1>
-        <p>Your Salesforce UserId is not authorized to view this content.</p>
+        <h1>Access Denied / Not Authorized</h1>
+        <p>This content is restricted. Please authorize your Salesforce account.</p>
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -38,7 +38,7 @@
             const trimmedUserId = userId ? userId.trim() : null;
             
             if (trimmedUserId && allowedUserIds.includes(trimmedUserId)) {
-                $('#displayUserId').text(trimmedUserId); // Display the user ID
+                $('#displayUserId').text(trimmedUserId); 
                 $('#content').removeClass('hidden');
                 $('#blockedMessage').addClass('hidden');
                 console.log('Authorized user:', trimmedUserId);
@@ -50,40 +50,41 @@
         }
 
         function initCanvas() {
-            // Check if Sfdc.canvas is initialized by the Signed Request
             if (window.Sfdc && Sfdc.canvas && Sfdc.canvas.client) {
                 const context = Sfdc.canvas.client.context || {};
-                console.log('Canvas context object:', context);
-
-                // **CRITICAL:** Access User ID using the correct, case-sensitive path
-                // context -> user -> userId
                 const userId = context.user ? context.user.userId : null;
-                console.log('Canvas detected. UserId:', userId);
+                console.log('Initial Canvas context:', context);
+                console.log('Initial UserId:', userId);
 
-                showContent(userId);
-
-                // Subscribe to Canvas events
-                // Note: The jQuery Deferred error "Cannot read properties of undefined (reading 'subscribe')" 
-                // happens when the Canvas SDK fails to initialize. This structure handles it.
-                if (Sfdc.canvas.controller) {
-                    Sfdc.canvas.controller.subscribe({
-                        name: 'openLoginExternally',
-                        onData: function(event) {
-                            console.log('Received Canvas event:', event);
-                            if(event.url) window.open(event.url, '_blank');
+                if (userId) {
+                    // 1. User context is already available (e.g., after the OAuth redirect).
+                    showContent(userId);
+                } else {
+                    // 2. User context is NOT available, so initiate the OAuth flow.
+                    console.log('User not authorized. Initiating OAuth flow...');
+                    
+                    // Trigger the authorization flow
+                    Sfdc.canvas.client.authorize(function(response) {
+                        if (response.status === 200) {
+                            // Authorization successful, context should now be available.
+                            const authorizedContext = Sfdc.canvas.client.context || {};
+                            const authorizedUserId = authorizedContext.user ? authorizedContext.user.userId : null;
+                            console.log('Authorization successful. New UserId:', authorizedUserId);
+                            showContent(authorizedUserId);
+                        } else {
+                            // Authorization failed or denied by user
+                            console.error('Authorization failed:', response);
+                            showContent(null);
                         }
                     });
                 }
-
             } else {
                 // Not inside Canvas (Direct access)
-                console.log('Canvas not detected. Showing default/unauthenticated content.');
-                // You might choose to show a general login page or the restricted message here.
+                console.log('Canvas not detected. Showing unauthorized content.');
                 showContent(null);
             }
         }
 
-        // Initialize when the document is ready
         $(document).ready(initCanvas);
 
         // Login button for direct access
