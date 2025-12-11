@@ -89,9 +89,10 @@
 
         } else {
             // Not inside Canvas (direct browser access) - show content without restriction
+            conso
             $('#content').removeClass('hidden');
             $('#blockedMessage').addClass('hidden');
-
+            console.log('Canvas userId Not');
             // Login button opens Salesforce login in new tab
             $('#loginBtn').on('click', function() {
                 window.open('https://login.salesforce.com', '_blank');
@@ -100,6 +101,7 @@
     </script>
 </body>
 </html>
+
 
 
 
