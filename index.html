@@ -25,13 +25,11 @@
         <h1>Access Denied / Not Authorized</h1>
         <p>This content is restricted. Please authorize your Salesforce account.</p>
     </div>
-
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
-    <script src="https://login.salesforce.com/canvas/sdk/js/57.0/canvas-all.js"></script> 
+    <script src="/canvas/sdk/js/57.0/canvas-all.js"></script> 
 
     <script>
-        // List of authorized Salesforce User IDs (Example)
         const allowedUserIds = ["005g5000000ujTtAAI"]; 
 
         function showContent(userId) {
@@ -49,7 +47,6 @@
             }
         }
 
-        // --- CORE CANVAS INITIALIZATION AND AUTHORIZATION LOGIC ---
         function initCanvas() {
             if (!(window.Sfdc && Sfdc.canvas && Sfdc.canvas.client)) {
                 console.log('Canvas not detected. Showing default/unauthenticated content.');
@@ -63,34 +60,28 @@
             console.log('Initial UserId:', userId);
 
             if (userId) {
-                // 1. User context is already available (e.g., after successful OAuth redirect).
                 showContent(userId);
             } else {
-                // 2. User context is NOT available, so initiate the OAuth flow.
                 console.log('User not authorized. Initiating OAuth flow...');
                 
-                // 🚨 FIX: Check if the function exists before calling it
+                // Final Logic: Check function existence before calling
                 if (typeof Sfdc.canvas.client.authorize === 'function') {
                     Sfdc.canvas.client.authorize(function(response) {
                         if (response.status === 200) {
-                            // Authorization successful, context should now be available.
                             const authorizedContext = Sfdc.canvas.client.context || {};
                             const authorizedUserId = authorizedContext.user ? authorizedContext.user.userId : null;
-                            console.log('Authorization successful. New UserId:', authorizedUserId);
                             showContent(authorizedUserId);
                         } else {
-                            // Authorization failed or denied by user
                             console.error('Authorization failed:', response);
                             showContent(null);
                         }
                     });
                 } else {
-                    console.error('FATAL ERROR: Sfdc.canvas.client.authorize is missing. SDK load failed or is incomplete.');
+                    console.error('FATAL ERROR: Sfdc.canvas.client.authorize is missing. SDK load failed or is incomplete. (Check load path!)');
                     showContent(null);
                 }
             }
             
-            // Subscribe to Canvas events
             if (Sfdc.canvas.controller) {
                 Sfdc.canvas.controller.subscribe({
                     name: 'openLoginExternally',
@@ -101,10 +92,9 @@
             }
         }
 
-        // 🚨 FIX: Wrap the initialization with a slight delay
-        // This ensures the external canvas-all.js script has time to fully execute and define the 'authorize' function.
+        // Use a slight delay to ensure all external scripts have finished loading
         $(document).ready(function() {
-            setTimeout(initCanvas, 300); // 300ms delay should be sufficient
+            setTimeout(initCanvas, 300); 
         });
 
         // Login button for direct access
