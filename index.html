@@ -63,7 +63,7 @@
         // Function to show/hide content based on user id
         function checkAccess(userId) {
             console.log('Canvas userId:', userId); // Debug output
-
+            console.log('Canvas userId:', userId);
             if (userId && allowedUserIds.includes(userId.trim())) {
                 $('#content').removeClass('hidden');
                 $('#blockedMessage').addClass('hidden');
@@ -77,6 +77,8 @@
         if (window.Sfdc && Sfdc.canvas && Sfdc.canvas.client) {
             const context = Sfdc.canvas.client.context || {};
             const userId = context.user ? context.user.userId : null;
+            const userId1 = context.user ? context.user.UserId : null;
+            console.log('New Id',userId1);
             checkAccess(userId);
 
             // Handle login button click inside Canvas
@@ -101,6 +103,7 @@
     </script>
 </body>
 </html>
+
 
 
 
