@@ -49,21 +49,28 @@
             }
         }
 
+        // --- CORE CANVAS INITIALIZATION AND AUTHORIZATION LOGIC ---
         function initCanvas() {
-            if (window.Sfdc && Sfdc.canvas && Sfdc.canvas.client) {
-                const context = Sfdc.canvas.client.context || {};
-                const userId = context.user ? context.user.userId : null;
-                console.log('Initial Canvas context:', context);
-                console.log('Initial UserId:', userId);
+            if (!(window.Sfdc && Sfdc.canvas && Sfdc.canvas.client)) {
+                console.log('Canvas not detected. Showing default/unauthenticated content.');
+                return showContent(null);
+            }
+            
+            const context = Sfdc.canvas.client.context || {};
+            const userId = context.user ? context.user.userId : null;
+            
+            console.log('Initial Canvas context:', context);
+            console.log('Initial UserId:', userId);
 
-                if (userId) {
-                    // 1. User context is already available (e.g., after the OAuth redirect).
-                    showContent(userId);
-                } else {
-                    // 2. User context is NOT available, so initiate the OAuth flow.
-                    console.log('User not authorized. Initiating OAuth flow...');
-                    
-                    // Trigger the authorization flow
+            if (userId) {
+                // 1. User context is already available (e.g., after successful OAuth redirect).
+                showContent(userId);
+            } else {
+                // 2. User context is NOT available, so initiate the OAuth flow.
+                console.log('User not authorized. Initiating OAuth flow...');
+                
+                // 🚨 FIX: Check if the function exists before calling it
+                if (typeof Sfdc.canvas.client.authorize === 'function') {
                     Sfdc.canvas.client.authorize(function(response) {
                         if (response.status === 200) {
                             // Authorization successful, context should now be available.
@@ -77,15 +84,28 @@
                             showContent(null);
                         }
                     });
+                } else {
+                    console.error('FATAL ERROR: Sfdc.canvas.client.authorize is missing. SDK load failed or is incomplete.');
+                    showContent(null);
                 }
-            } else {
-                // Not inside Canvas (Direct access)
-                console.log('Canvas not detected. Showing unauthorized content.');
-                showContent(null);
+            }
+            
+            // Subscribe to Canvas events
+            if (Sfdc.canvas.controller) {
+                Sfdc.canvas.controller.subscribe({
+                    name: 'openLoginExternally',
+                    onData: function(event) {
+                        if(event.url) window.open(event.url, '_blank');
+                    }
+                });
             }
         }
 
-        $(document).ready(initCanvas);
+        // 🚨 FIX: Wrap the initialization with a slight delay
+        // This ensures the external canvas-all.js script has time to fully execute and define the 'authorize' function.
+        $(document).ready(function() {
+            setTimeout(initCanvas, 300); // 300ms delay should be sufficient
+        });
 
         // Login button for direct access
         $('#loginBtn').on('click', function() {
