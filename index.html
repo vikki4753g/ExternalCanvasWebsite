@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Canvas App Secure Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f7fa;
+        }
+        h1 {
+            color: #2E7D32; /* Dark green for welcome */
+        }
+        p {
+            color: #2E7D32; /* Dark green for paragraph */
+        }
+        .hidden { display: none; }
+        .blocked {
+            color: #B71C1C; /* Dark red for access denied */
+            font-weight: bold;
+            margin-top: 40px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #0070d2;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #005fb2;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="content" class="hidden">
+        <h1>Welcome to the Canvas App Website</h1>
+        <p>This content is visible only to authorized Salesforce users.</p>
+        <button id="loginBtn">Login to Salesforce</button>
+    </div>
+
+    <div id="blockedMessage" class="hidden blocked">
+        <h1>Access Denied</h1>
+        <p>Your Salesforce UserId is not authorized to view this content.</p>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        // List of allowed Salesforce User IDs
+        const allowedUserIds = [
+            "005NS00000HHuDhYAL",
+            "005NS00000JHnfiYAD"
+        ];
+
+        // Default hide all messages
+        $('#content').addClass('hidden');
+        $('#blockedMessage').addClass('hidden');
+
+        // Function to show/hide content based on user id
+        function checkAccess(userId) {
+            console.log('Canvas userId:', userId); // Debug output
+
+            if (userId && allowedUserIds.includes(userId.trim())) {
+                $('#content').removeClass('hidden');
+                $('#blockedMessage').addClass('hidden');
+            } else {
+                $('#content').addClass('hidden');
+                $('#blockedMessage').removeClass('hidden');
+            }
+        }
+
+        // Detect if inside Salesforce Canvas
+        if (window.Sfdc && Sfdc.canvas && Sfdc.canvas.client) {
+            const context = Sfdc.canvas.client.context || {};
+            const userId = context.user ? context.user.userId : null;
+            checkAccess(userId);
+
+            // Handle login button click inside Canvas
+            $('#loginBtn').on('click', function() {
+                // Open Salesforce login externally (outside iframe)
+                Sfdc.canvas.client.publish(window.parent, 'openLoginExternally', {
+                    url: 'https://login.salesforce.com'
+                });
+            });
+
+        } else {
+            // Not inside Canvas (direct browser access) - show content without restriction
+            $('#content').removeClass('hidden');
+            $('#blockedMessage').addClass('hidden');
+
+            // Login button opens Salesforce login in new tab
+            $('#loginBtn').on('click', function() {
+                window.open('https://login.salesforce.com', '_blank');
+            });
+        }
+    </script>
+</body>
+</html>
