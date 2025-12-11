@@ -67,16 +67,26 @@
                 
                 // Final Logic: Check function existence before calling (prevents previous TypeError)
                 if (typeof Sfdc.canvas.client.authorize === 'function') {
-                    Sfdc.canvas.client.authorize(function(response) {
-                        if (response.status === 200) {
-                            const authorizedContext = Sfdc.canvas.client.context || {};
-                            const authorizedUserId = authorizedContext.user ? authorizedContext.user.userId : null;
-                            showContent(authorizedUserId);
-                        } else {
-                            console.error('Authorization failed:', response);
-                            showContent(null);
+                    
+                   // Temporarily force the authorization to happen in a new tab
+                    Sfdc.canvas.client.authorize('/canvas/oauth/auth', // This is the path to the login URL
+                        function(response) {
+                            // This function will still run if the new tab successfully logs in and redirects
+                            // back to the VF page, but it helps isolate the issue.
+                            if (response.status === 200) {
+                                // Re-check context
+                                const authorizedContext = Sfdc.canvas.client.context || {};
+                                const authorizedUserId = authorizedContext.user ? authorizedContext.user.userId : null;
+                                showContent(authorizedUserId);
+                            } else {
+                                console.error('Authorization failed:', response);
+                                showContent(null);
+                            }
+                        },
+                        { // Add options to force external login
+                            display: 'page' 
                         }
-                    });
+                    );
                 } else {
                     console.error('FATAL ERROR: Sfdc.canvas.client.authorize is missing. SDK load failed or is incomplete. (Check console for 404!)');
                     showContent(null);
@@ -107,3 +117,4 @@
 
 </body>
 </html>
+
