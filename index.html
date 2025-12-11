@@ -66,7 +66,7 @@
                 console.log('User not authorized. Initiating OAuth flow...');
                 
                 // Final Logic: Check function existence before calling (prevents previous TypeError)
-               // if (typeof Sfdc.canvas.client.authorize === 'function') {
+               if (typeof Sfdc.canvas.client.authorize === 'function') {
                     
                    // Temporarily force the authorization to happen in a new tab
                     Sfdc.canvas.client.authorize('/canvas/oauth/auth', // This is the path to the login URL
@@ -87,10 +87,10 @@
                             display: 'page' 
                         }
                     );
-                // } else {
-                //     console.error('FATAL ERROR: Sfdc.canvas.client.authorize is missing. SDK load failed or is incomplete. (Check console for 404!)');
-                //     showContent(null);
-                // }
+                } else {
+                    console.error('FATAL ERROR: Sfdc.canvas.client.authorize is missing. SDK load failed or is incomplete. (Check console for 404!)');
+                    showContent(null);
+                }
             }
             
             if (Sfdc.canvas.controller) {
@@ -117,5 +117,6 @@
 
 </body>
 </html>
+
 
 
